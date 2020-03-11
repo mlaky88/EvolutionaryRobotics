@@ -1,12 +1,22 @@
 import sys
 import pygame as pg
+from pygame.locals import *
+import numpy as np
 import random as rnd
 rnd.seed(42)
 
-from environment import *
+from environment import Robot, Obstacle
 from differentialevolution import DifferentialEvolution as DE
 from problem import Problem
 
+class rProblem(Problem):
+    def __init__(self,bounds,dim):
+        super().__init__()
+        self.bounds = bounds
+        self.dim = dim
+    
+    def funcEval(self,x):
+        pass
 
 
 def moveRobots(screen,robots):
@@ -16,7 +26,7 @@ def moveRobots(screen,robots):
         location = (r.loc[0]+move[0],r.loc[1]+move[1])
         r.loc = location
         pg.draw.circle(screen, r.color, location, r.radius)
-        robotRange = pg.Rect(r.loc[0]-r.range, r.loc[1]-r.range, r.range*2, r.range*2)
+        robotRange = pg.Rect(r.loc[0]-r.sensorRange, r.loc[1]-r.sensorRange, r.sensorRange*2, r.sensorRange*2)
         pg.draw.rect(screen,(255,0,0),robotRange,1)
 
 
@@ -48,30 +58,51 @@ def drawObstacles(screen,obstacles):
         pg.draw.rect(screen, obst.color, obst.pyObst)
 
 
-def calcLocalAPF():
-    for r in robots:
-        
+def calcLocalAPF(robot,bounds, obstacles):
+    ka = 5
+    kr = 100
+    pmap = np.zeros((robot.sensorRange*2,robot.sensorRange*2))
+    for y in range(bounds[0][0],bounds[0][1]):
+        for x in range(bounds[1][0],bounds[1][1]):
+            pmap[x,y] = 0.5 * ka * np.hypot(x - robot.goalLoc[0], y - robot.goalLoc[1]) ** 2 #att
+            pmap[x,y] += 0.5 * ka * np.hypot(x - robot.goalLoc[0], y - robot.goalLoc[1]) ** 2  #rep      
 
-def findPath(robots):
+def findPath(robots,obstacles):
     apfMap = calcLocalAPF(robots)
-    prob = Problem()
-    #de = DE()
+    for r in robots:
+        #for each robot calculate bounds
+        bounds = [(r.loc[0]-r.sensorRange,r.loc[0]+r.sensorRange),(r.loc[1]-r.sensorRange,r.loc[1]+r.sensorRange)]
+        print(bounds, len(bounds))
+        localApf = calcLocalAPF(r)
+        prob = rProblem(bounds,len(bounds))
+        #de = DE(prob)
+        #best = de.run()
+
+
+def quit():
+    quit = False
+    for event in pg.event.get():
+        if event.type == pg.KEYDOWN:
+            if event.key == K_ESCAPE:
+                quit = True
+        if event.type == pg.QUIT:
+            quit = True
+    return quit
 
 def main():
 
 
     
-    bgColor = (40,40,40)
-    obstColor = (150,200,20)
+    bgColor = (255,255,255)
     screenSize = (500,500)
 
     screen = pg.display.set_mode(screenSize)
 
     r1 = Robot((50,50),(200,200),5,2,(255,0,0),30)
 
-    o1 = Obstacle(40,100,200,50,20,300,-1,-1,True,1,0,2,(150,200,20))
-    o2 = Obstacle(70,180,100,30,10,200,-1,-1,True,1,0,4,(150,200,20))
-    o3 = Obstacle(300,130,30,130,-1,-1,-1,-1,False,0,0,0,(250,200,20))
+    o1 = Obstacle(40,100,200,50,20,300,-1,-1,True,1,0,2,(150,150,150))
+    o2 = Obstacle(70,180,100,30,10,200,-1,-1,True,1,0,4,(150,150,150))
+    o3 = Obstacle(300,130,30,130,-1,-1,-1,-1,False,0,0,0,(0,0,0))
 
 
     O = [o1,o2,o3]
@@ -80,16 +111,10 @@ def main():
     clock = pg.time.Clock()
 
     frame_per_second = 30
-    running = True
 
-    while running:
-        for event in pg.event.get():
-            print(event,event.type)
-            if event.type == pg.QUIT:
-                running = False
-                break
+    while not quit():               
         
-        findPath()
+        findPath(robots,O)
 
         screen.fill(bgColor) #set background
         O = moveDynamicObstacles(O)       

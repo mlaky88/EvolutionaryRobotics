@@ -9,13 +9,13 @@ class Environment():
         
 
 class Robot():
-    def __init__(self,loc,goalLoc, radius, velocity, color,range):
+    def __init__(self,loc,goalLoc, radius, velocity, color,sensorRange):
         self.loc = loc
         self.goalLoc = goalLoc
         self.radius = radius
         self.color = color
         self.velocity = velocity
-        self.range = range
+        self.sensorRange = sensorRange
         
 
 
