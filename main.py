@@ -39,3 +39,10 @@ np.random.seed(42)
 
 de = DifferentialEvolution(prob,popSize=20,maxFunEvals=10000*dimension)
 de.run()
+
+
+mapSize = (300,300) #param
+sP = () #param
+gP = () #param
+sensorRange = (10,10) #param
+for 
