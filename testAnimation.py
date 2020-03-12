@@ -3,11 +3,17 @@ import pygame as pg
 from pygame.locals import *
 import numpy as np
 import random as rnd
+import threading as thr
+import time
 rnd.seed(42)
 
-from environment import Robot, Obstacle
+from environment import Robot, Obstacle, Environment
 from differentialevolution import DifferentialEvolution as DE
 from problem import Problem
+
+
+env = None
+global finished
 
 class rProblem(Problem):
     def __init__(self,bounds,dim):
@@ -19,39 +25,7 @@ class rProblem(Problem):
         pass
 
 
-def moveRobots(screen,robots):
-    motion = [[1, 0],[0, 1],[-1, 0],[0, -1],[-1, -1],[-1, 1],[1, -1],[1, 1]]
-    for r in robots:
-        move = motion[rnd.randint(0,2)]
-        location = (r.loc[0]+move[0],r.loc[1]+move[1])
-        r.loc = location
-        pg.draw.circle(screen, r.color, location, r.radius)
-        robotRange = pg.Rect(r.loc[0]-r.sensorRange, r.loc[1]-r.sensorRange, r.sensorRange*2, r.sensorRange*2)
-        pg.draw.rect(screen,(255,0,0),robotRange,1)
 
-
-
-def moveDynamicObstacles(obstacles):
-
-    for _, obst in enumerate(obstacles):
-        if obst.isDynamic:
-            if obst.dx == 1 and obst.pyObst.x < obst.rightBarier: #moving right
-                obst.pyObst.x += obst.velocity
-            if obst.dx == -1 and obst.pyObst.x > obst.leftBarier: #moving left
-                obst.pyObst.x -= obst.velocity
-
-            if obst.pyObst.x + obst.width >= obst.rightBarier or obst.pyObst.x <= obst.leftBarier: #reverse movement at x barriers
-                obst.dx*=-1
-
-            if obst.dy == 1 and obst.pyObst.y < obst.lowBarier: #moving down
-                obst.pyObst.y += obst.velocity
-            if obst.dy == -1 and obst.pyObst.y > obst.topBarier:
-                obst.pyObst.x -= obst.velocity
-
-            if obst.pyObst.y + obst.height >= obst.lowBarier or obst.pyObst.y <= obst.topBarier: #reverse movement at x barriers
-                obst.dy*=-1
-            
-    return obstacles
 
 def drawObstacles(screen,obstacles):
     for _, obst in enumerate(obstacles): 
@@ -65,38 +39,81 @@ def calcLocalAPF(robot,bounds, obstacles):
     for y in range(bounds[0][0],bounds[0][1]):
         for x in range(bounds[1][0],bounds[1][1]):
             pmap[x,y] = 0.5 * ka * np.hypot(x - robot.goalLoc[0], y - robot.goalLoc[1]) ** 2 #att
-            pmap[x,y] += 0.5 * ka * np.hypot(x - robot.goalLoc[0], y - robot.goalLoc[1]) ** 2  #rep      
+            d = [np.hypot(x - obst[0], y - o[1]) for obst in obstacles]
+            #pmap[x,y] += 0.5 * ka * np.hypot(x - robot.goalLoc[0], y - robot.goalLoc[1]) ** 2  #rep      
 
 def findPath(robots,obstacles):
-    apfMap = calcLocalAPF(robots)
+    #apfMap = calcLocalAPF(robots)
     for r in robots:
         #for each robot calculate bounds
         bounds = [(r.loc[0]-r.sensorRange,r.loc[0]+r.sensorRange),(r.loc[1]-r.sensorRange,r.loc[1]+r.sensorRange)]
         print(bounds, len(bounds))
-        localApf = calcLocalAPF(r)
+        #localApf = calcLocalAPF(r)
         prob = rProblem(bounds,len(bounds))
         #de = DE(prob)
         #best = de.run()
 
 
-def quit():
-    quit = False
+def done():
+    
+    quit = False 
+    global finished
     for event in pg.event.get():
         if event.type == pg.KEYDOWN:
             if event.key == K_ESCAPE:
                 quit = True
+                finished = True
         if event.type == pg.QUIT:
             quit = True
+            finished = True
+    
     return quit
 
-def main():
 
+
+def updateAllRobotsPositions():
+    global finished
+    while not finished:
+        time.sleep(0.3)
+        for r in env.robots:
+            r.updateRobotPosition()
+        
+
+def drawRobots(screen,robots):
+    for r in robots:        
+        pg.draw.circle(screen, r.color, r.loc, r.radius)
+        pg.draw.rect(screen,(255,0,0),r.robotRange,1)
 
     
+
+def draw():
     bgColor = (255,255,255)
     screenSize = (500,500)
-
     screen = pg.display.set_mode(screenSize)
+
+    pg.init()
+    clock = pg.time.Clock()
+    
+    frame_per_second = 30
+
+    while not done():
+        #time.sleep(1)              
+        screen.fill(bgColor) #set background
+        env.updateWorldObstacles()
+        
+
+        drawObstacles(screen,env.obstacles)         
+        drawRobots(screen,env.robots)
+        
+
+        #checkCollision()
+        pg.display.update()
+        clock.tick(frame_per_second)
+
+if __name__ == '__main__':   
+    global finished
+
+    finished = False
 
     r1 = Robot((50,50),(200,200),5,2,(255,0,0),30)
 
@@ -104,31 +121,16 @@ def main():
     o2 = Obstacle(70,180,100,30,10,200,-1,-1,True,1,0,4,(150,150,150))
     o3 = Obstacle(300,130,30,130,-1,-1,-1,-1,False,0,0,0,(0,0,0))
 
-
-    O = [o1,o2,o3]
+    obst = [o1,o2,o3]
     robots = [r1]
+    env = Environment(robots,obst)
     
-    clock = pg.time.Clock()
-
-    frame_per_second = 30
-
-    while not quit():               
-        
-        findPath(robots,O)
-
-        screen.fill(bgColor) #set background
-        O = moveDynamicObstacles(O)       
-
-        drawObstacles(screen,O) 
-
-        moveRobots(screen,robots)
-
-        #checkCollision()
-        pg.display.flip()
-        clock.tick(frame_per_second)
-
-if __name__ == '__main__':
-    pg.init()
-    main()
+    drawThread = thr.Thread(target=draw,daemon=True,args=())
+    robotThread = thr.Thread(target=updateAllRobotsPositions,args=())
+    drawThread.start()
+    robotThread.start()
+    robotThread.join()
+    drawThread.join()
+    #main()
     pg.quit()
     sys.exit()
