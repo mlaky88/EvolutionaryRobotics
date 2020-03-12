@@ -5,9 +5,7 @@ import math
 class Environment():
     def __init__(self,robots,obstacles):
         self.robots = robots
-        self.obstacles = obstacles
-
-    
+        self.obstacles = obstacles    
 
     def updateWorldObstacles(self):
             for _, obst in enumerate(self.obstacles):

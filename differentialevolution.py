@@ -63,4 +63,5 @@ class DifferentialEvolution():
             genCounter += 1
             print("Best",end='')
             self.best.toString()
+        return self.best.x
 
