@@ -1,10 +1,13 @@
 import pygame as pg
 import random as rnd
+import math
 
 class Environment():
     def __init__(self,robots,obstacles):
         self.robots = robots
         self.obstacles = obstacles
+
+    
 
     def updateWorldObstacles(self):
             for _, obst in enumerate(self.obstacles):
@@ -25,28 +28,54 @@ class Environment():
                     if obst.pyObst.y + obst.height >= obst.lowBarier or obst.pyObst.y <= obst.topBarier: #reverse movement at x barriers
                         obst.dy*=-1
         
+class Vec2D():
+    def __init__(self,x,y):
+        self.x = x
+        self.y = y
+
+    def __add__(self,other):
+        return Vec2D(self.x+other.x,self.y+other.y)
+
+    def __sub__(self,other):
+        return Vec2D(self.x-other.x,self.y-other.y)  
+
+    def mul(self,value):
+        return Vec2D(self.x * value,self.y*value)
+
+    def div(self,value):
+        return Vec2D(self.x / value,self.y/value)
+
+    def __eq__(self,other):
+        if int(self.x) == int(other.x) and int(self.y) == int(other.y):
+            return True
+        return False
+
+    def toTuple(self):
+        return tuple((int(self.x),int(self.y)))
+
 
 class Robot():
     def __init__(self,loc,goalLoc, radius, velocity, color,sensorRange):
         self.loc = loc
         self.goalLoc = goalLoc
+        self.nextLoc = goalLoc
         self.radius = radius
         self.color = color
         self.velocity = velocity
         self.sensorRange = sensorRange
-        self.robotRange = pg.Rect(self.loc[0]-self.sensorRange, self.loc[1]-self.sensorRange, self.sensorRange*2, self.sensorRange*2)
+        self.isMoving = True
+        self.robotRange = pg.Rect(self.loc.x-self.sensorRange, self.loc.y-self.sensorRange, self.sensorRange*2, self.sensorRange*2)
+        distance = math.sqrt(math.pow(self.goalLoc.x-self.loc.x,2)+math.pow(self.goalLoc.y-self.loc.y,2))
+        self.direction = self.loc.div(distance)
+
 
     def updateRobotPosition(self):
-
         motion = [[1, 0],[0, 1],[-1, 0],[0, -1],[-1, -1],[-1, 1],[1, -1],[1, 1]]
         move = motion[rnd.randint(0,2)]
-        location = (self.loc[0]+move[0],self.loc[1]+move[1])
+        location = (self.loc.x+move[0],self.loc.y+move[1])
         self.loc = location
-        #pg.draw.circle(screen, r.color, location, r.radius)
-        self.robotRange = pg.Rect(self.loc[0]-self.sensorRange, self.loc[1]-self.sensorRange, self.sensorRange*2, self.sensorRange*2)
-        #pg.draw.rect(screen,(255,0,0),robotRange,1)
+        self.robotRange = pg.Rect(self.loc.x-self.sensorRange, self.loc.y-self.sensorRange, self.sensorRange*2, self.sensorRange*2)
         
-
 
 class Obstacle():
     def __init__(self,left,top,width,height,leftBarier,rightBarier,topBarier, lowBarier, isDynamic,dx,dy,velocity,color):
