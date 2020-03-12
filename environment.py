@@ -51,6 +51,9 @@ class Vec2D():
     def toTuple(self):
         return tuple((int(self.x),int(self.y)))
 
+    def distance(self,other):
+        return math.sqrt(math.pow(self.x-other.x,2)+math.pow(self.y-other.y,2))
+
 
 class Robot():
     def __init__(self,loc,goalLoc, radius, velocity, color,sensorRange):
@@ -61,10 +64,9 @@ class Robot():
         self.color = color
         self.velocity = velocity
         self.sensorRange = sensorRange
-        self.isMoving = True
+        self.isMoving = False
         self.robotRange = pg.Rect(self.loc.x-self.sensorRange, self.loc.y-self.sensorRange, self.sensorRange*2, self.sensorRange*2)
-        distance = math.sqrt(math.pow(self.goalLoc.x-self.loc.x,2)+math.pow(self.goalLoc.y-self.loc.y,2))
-        self.direction = self.loc.div(distance)
+
 
 
     def updateRobotPosition(self):

@@ -27,22 +27,23 @@ class robotNavProblem(Problem):
         self.CollideObstaclePenalty = 4000
         self.CollideRobotPenalty = 5000
         self.goal = goal
+        #print("Gosl",self.goal.x,self.goal.y)
         
     
     def funcEval(self,x):
         isObstCollison = 0
         isRobotCollison = 0
-        distanceToTarget = math.sqrt(math.pow(self.goal.x-x[0],2)+math.pow(self.goal.y-x[0],2))
+        distanceToTarget = math.sqrt(math.pow(self.goal.x-x[0],2)+math.pow(self.goal.y-x[1],2))
         localApf = 0
         point = Point(0.5, 0.5)
         polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
-        print(polygon.contains(point))  
+        #print(polygon.contains(point))  
 
         #check point for obstacle collision
         #check point for robot colision
         #calculate local apf and let it be a guide for point calculation
 
-        
+        #print(distanceToTarget)
         
         return isObstCollison * self.CollideObstaclePenalty + isRobotCollison * self.CollideRobotPenalty + distanceToTarget + localApf
 
@@ -68,21 +69,23 @@ def done():
 
 def updateAllRobotsPositions():
     global finished
-
+    ii=0
     while not finished:
-        time.sleep(0.005)
+        time.sleep(0.005*20)
         for r in env.robots:
             if r.isMoving == False:
-                pass
-                #run DE and calculate point to move to
-
+                
+                #run DE and  calculate point to move to
                 #check collisions and everything
+
+                #clip out of bounds!!! on screen
                 problemBounds = [(r.loc.x-r.sensorRange,r.loc.x+r.sensorRange),(r.loc.y-r.sensorRange,r.loc.y+r.sensorRange)]
-                prob = robotNavProblem(problemBounds)
-                opt = DE(prob).run()
-                r.nextLoc = Vec2D(opt.x[0],opt.x[1])
-                r.distance = math.sqrt(math.pow(r.nextLoc.x-r.loc.x,2)+math.pow(r.nextLoc.y-r.loc.y,2))
-                r.direction = r.loc.div(r.distance)
+                prob = robotNavProblem(problemBounds, r.goalLoc)
+                opt = DE(prob,popSize=15,maxFunEvals=1500).run()
+                print(opt)
+                r.nextLoc = Vec2D(int(opt[0]),int(opt[1]))
+                r.distance = r.nextLoc.distance(r.loc) #math.sqrt(math.pow(r.nextLoc.x-r.loc.x,2)+math.pow(r.nextLoc.y-r.loc.y,2))
+                r.direction = (r.nextLoc - r.loc).div(r.distance)
                 
                 r.isMoving = True
             else:
@@ -91,15 +94,15 @@ def updateAllRobotsPositions():
                 r.loc += r.direction.mul(speed)
                 r.robotRange = pg.Rect(r.loc.x-r.sensorRange, r.loc.y-r.sensorRange, r.sensorRange*2, r.sensorRange*2)
                 #check if at nextLoc is reached then is moving set to False
-
-                if r.loc == r.nextLoc: #and also if collision set moving to false TODO
+                #print(r.loc.distance(r.nextLoc))
+                if r.loc.distance(r.nextLoc) <= 2: #and also if collision set moving to false TODO
                     r.isMoving = False
-
 
         
 def drawRobots(screen,robots):
     for r in robots:        
         pg.draw.circle(screen, r.color, r.loc.toTuple(), r.radius)
+        pg.draw.circle(screen, (0,0,255), r.nextLoc.toTuple(), r.radius)
         pg.draw.rect(screen,(255,0,0),r.robotRange,1)
         pg.draw.circle(screen, (255,128,0), r.goalLoc.toTuple(), r.radius)
 
@@ -113,17 +116,6 @@ def calcLocalAPF(robot,bounds, obstacles):
             d = [np.hypot(x - obst[0], y - o[1]) for obst in obstacles]
             #pmap[x,y] += 0.5 * ka * np.hypot(x - robot.goalLoc[0], y - robot.goalLoc[1]) ** 2  #rep      
 
-def findPath(robots,obstacles):
-    #apfMap = calcLocalAPF(robots)
-    for r in robots:
-        pass
-        #for each robot calculate bounds
-        
-        #print(bounds, len(bounds))
-        #localApf = calcLocalAPF(r)
-        #prob = rProblem(bounds,len(bounds))
-        #de = DE(prob)
-        #best = de.run()
 
 def draw():
     bgColor = (255,255,255)

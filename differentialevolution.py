@@ -22,7 +22,7 @@ class DifferentialEvolution():
             self.pop.append(DeIndividual(self.problem))
             self.pop[i].randomize(self.problem)
             self.pop[i].eval = self.problem.funcEval(self.pop[i].x)
-            self.pop[i].toString()
+            #self.pop[i].toString()
         self.best = cp.deepcopy(max(self.pop))        
 
     def searchBest(self):
@@ -57,11 +57,12 @@ class DifferentialEvolution():
         genCounter = 1
         self.generatePop()
         while self.currFunEvals < self.maxFunEvals:
-            print("Generation {}".format(genCounter))
+            #print("Generation {}".format(genCounter))
             self.evolveGeneration()
             self.searchBest() 
             genCounter += 1
-            print("Best",end='')
-            self.best.toString()
+            #print("Best",end='')
+            #self.best.toString()
+        #self.best.toString()
         return self.best.x
 
