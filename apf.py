@@ -23,7 +23,7 @@ class ArtificialPotentialField():
         G = np.hypot(self.qf,self.q0)
         pMap = self.calculateAPF()
         while G > 0 and self.tao < self.N and self.safe == True:
-            
+            pass
 
     def calcAttPot(self,x, y):        
         return 0.5 * self.ka * distance.euclidean((x,y),self.qf)# np.hypot(x - self.qf[0], y - self.qf[1])
@@ -48,20 +48,20 @@ class ArtificialPotentialField():
 
         dq = np.hypot(x - self.O[minid][0], y - self.O[minid][1])
         
-        if dq <= self.r:
-            if dq <= 0.1:
-                dq = 0.1
-            return 0.5 * self.kr * (1.0 / dq - 1.0 / self.r) ** 2
+        #if dq <= self.r:
+        if dq <= 0.1:
+            dq = 0.1
+        return 0.5 * self.kr * (1.0 / dq - 1.0 / self.r) ** 2
             
-        else:
-            return 0.0
+        #else:
+        #    return 0.0
         
     
     def calculateAPF(self):
         pmap = np.zeros((self.height,self.width))
         for x in range(self.height):
             for y in range(self.width):
-                pmap[x,y] = self.calcAttPot(x,y)+self.rep(x,y)
+                pmap[x,y] = self.rep(x,y)+self.calcAttPot(x,y)
 
         data = np.array(pmap).T
 
@@ -76,10 +76,10 @@ class ArtificialPotentialField():
 sx = (5,5)
 sg = (40,40)
 obs = [(15,20),(25,20),(30,32),(40,31)]
-ka = 5;
+ka = 5
 kr = 100
 n=100
-rr = 5
+rr = 15
 N=1000
 width=50
 height=50
@@ -141,7 +141,7 @@ def calc_potential_field(gx, gy, ox, oy, reso, rr):
         for iy in range(yw):
             y = iy * reso + miny
             
-            ug = calc_attractive_potential(x, y, gx, gy)
+            ug = 0#calc_attractive_potential(x, y, gx, gy)
             uo = calc_repulsive_potential(x, y, ox, oy, rr)
             uf = ug + uo
             pmap[ix][iy] = uf
@@ -245,7 +245,7 @@ def potential_field_planning(sx, sy, gx, gy, ox, oy, reso, rr):
 
 def draw_heatmap(data):
     data = np.array(data).T
-    plt.pcolor(data, vmax=100.0, cmap=plt.cm.Blues)
+    plt.pcolor(data, vmax=data.max(), cmap=plt.cm.Blues)
 
 
 def main():
@@ -256,7 +256,7 @@ def main():
     gx = 30.0  # goal x position [m]
     gy = 30.0  # goal y position [m]
     grid_size = 0.5  # potential grid size [m]
-    robot_radius = 5.0  # robot radius [m]
+    robot_radius = 15.0  # robot radius [m]
 
     ox = [15.0, 5.0, 20.0, 25.0]  # obstacle x position list [m]
     oy = [25.0, 15.0, 26.0, 25.0]  # obstacle y position list [m]
